@@ -2248,52 +2248,76 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile, courses, on
 
 // --- ROUTER UTAMA DENGAN GLOBAL STATE ---
 const App = () => {
-  const [courses, setCourses] = useState(initialCourses);
+  // 1. Baca data dari LocalStorage agar tidak ter-reset saat log out/pindah akun
+  const [courses, setCourses] = useState(() => {
+    const saved = localStorage.getItem('mondy_courses');
+    return saved ? JSON.parse(saved) : initialCourses;
+  });
+
   const [globalSettings, setGlobalSettings] = useState(initialSettings);
   const [instructorProfile, setInstructorProfile] = useState(initialInstructorProfile);
 
+  // 2. Setiap kali ada perubahan courses, simpan otomatis ke LocalStorage
+  useEffect(() => {
+    localStorage.setItem('mondy_courses', JSON.stringify(courses));
+  }, [courses]);
+
+  // Coba ambil dari database Neon jika API siap
   useEffect(() => {
     fetch('/api/courses')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API offline');
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setCourses(data);
         }
       })
-      .catch(err => console.log('Menggunakan data lokal:', err));
+      .catch(() => {
+        console.log('Menggunakan database lokal tersimpan (LocalStorage).');
+      });
   }, []);
 
+  // Handler simpan modul baru
   const handleAddCourse = async (newCourseData) => {
-    try {
-      const res = await fetch('/api/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCourseData)
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        setCourses(prev => [saved, ...prev]);
-        return;
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    const fallbackObj = {
+    const newEntry = {
       id: Date.now(),
-      ...newCourseData,
+      category: newCourseData.category || 'UMUM',
+      title: newCourseData.title,
+      instructor: newCourseData.instructor || 'Rei, S.E., M.Ak.',
       rating: '5.0',
       reviews: 0,
       lessons: 1,
-      new_price: newCourseData.price_value > 0 ? `Rp${newCourseData.price_value.toLocaleString('id-ID')}` : 'Gratis',
-      old_price: 'Rp100.000',
+      duration: '02:00:00',
+      old_price: newCourseData.price_value > 0 ? `Rp${(Number(newCourseData.price_value) * 1.5).toLocaleString('id-ID')}` : 'Rp100.000',
+      new_price: newCourseData.price_value > 0 ? `Rp${Number(newCourseData.price_value).toLocaleString('id-ID')}` : 'Gratis',
+      price_value: Number(newCourseData.price_value || 0),
       color: 'from-teal-500 to-emerald-600',
       icon: '📚',
+      status: 'In Review',
       students: 0
     };
-    setCourses(prev => [fallbackObj, ...prev]);
+
+    // Update state utama & LocalStorage seketika
+    setCourses(prev => [newEntry, ...prev]);
+
+    // Kirim ke database Neon di background
+    try {
+      await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEntry)
+      });
+    } catch (e) {
+      console.warn('API sync tertunda, data aman di penyimpanan browser.');
+    }
   };
 
+  // Handler persetujuan Admin
   const handleApproveCourse = async (courseId) => {
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'Published' } : c));
+
     try {
       await fetch('/api/courses', {
         method: 'PATCH',
@@ -2301,10 +2325,10 @@ const App = () => {
         body: JSON.stringify({ id: courseId, status: 'Published' })
       });
     } catch (e) {
-      console.error(e);
+      console.warn('API sync tertunda.');
     }
-    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'Published' } : c));
-    alert("Modul berhasil disetujui (Approved) dan langsung dipublikasikan ke Katalog Mahasiswa!");
+
+    alert('Modul disetujui! Status kini Published dan tampil di Katalog Siswa.');
   };
 
   return (
@@ -2322,7 +2346,6 @@ const App = () => {
         <Route path="/admin/*" element={<AdminLayout settings={globalSettings} setSettings={setGlobalSettings} courses={courses} onApproveCourse={handleApproveCourse} />} />
         <Route path="/instruktur/*" element={<InstructorLayout instructorProfile={instructorProfile} setInstructorProfile={setInstructorProfile} courses={courses} onAddCourse={handleAddCourse} />} />
 
-        {/* Rute Halaman Dukungan Footer */}
         <Route path="/bantuan" element={<SupportPage settings={globalSettings} type="faq" />} />
         <Route path="/syarat" element={<SupportPage settings={globalSettings} type="terms" />} />
         <Route path="/privasi" element={<SupportPage settings={globalSettings} type="privacy" />} />
@@ -2330,5 +2353,4 @@ const App = () => {
     </Router>
   );
 };
-
 export default App;
