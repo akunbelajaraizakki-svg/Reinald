@@ -1591,35 +1591,35 @@ const AdminLayout = ({ settings, setSettings }) => {
 };
 
 // --- WIZARD COURSE BUILDER INSTRUKTUR ---
-const CourseBuilderWizard = ({ onGoBack }) => {
+const CourseBuilderWizard = ({ onGoBack, onAddCourse }) => {
   const [step, setStep] = useState(1);
   const [courseData, setCourseData] = useState({ title: '', category: 'AKUNTANSI', customCategory: '', price: '', description: '' });
 
   const [sections, setSections] = useState([
-    { id: "sec-1", title: 'Bagian 1: Pengantar', lessons: [{ id: "les-1", title: 'Video Pembelajaran (YouTube Link)', icon: '▶️', color: 'text-rose-500' }, { id: "les-2", title: 'Modul PDF / PPT / Word', icon: '📄', color: 'text-blue-500' }] }
+    { id: 'sec-1', title: 'Bagian 1: Pengantar', lessons: [{ id: 'les-1', title: 'Video Pembelajaran (YouTube Link)', icon: '▶️', color: 'text-rose-500' }, { id: 'les-2', title: 'Modul PDF / PPT / Word', icon: '📄', color: 'text-blue-500' }] }
   ]);
   const [draggedLesson, setDraggedLesson] = useState(null);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState(null);
   const [lessonForm, setLessonForm] = useState({ title: '', type: 'youtube', link: '' });
 
-  const handleAddSection = () => { setSections([...sections, { id: `sec-${Date.now()}`, title: `Bagian ${sections.length + 1}: Topik Baru`, lessons: [] }]); };
+  const handleAddSection = () => setSections([...sections, { id: `sec-${Date.now()}`, title: `Bagian ${sections.length + 1}: Topik Baru`, lessons: [] }]);
   const openLessonModal = (sectionId) => { setActiveSectionId(sectionId); setLessonForm({ title: '', type: 'youtube', link: '' }); setIsLessonModalOpen(true); };
-  
+
   const submitLesson = () => {
     if(!lessonForm.title.trim()) return alert("Judul materi wajib diisi!");
     let icon = '📄'; let color = 'text-blue-500';
     if(lessonForm.type === 'youtube' || lessonForm.type === 'video') { icon = '▶️'; color = 'text-rose-500'; }
     if(lessonForm.type === 'link') { icon = '🔗'; color = 'text-indigo-500'; }
     if(lessonForm.type === 'quiz') { icon = '📝'; color = 'text-amber-500'; }
-    if(lessonForm.type === 'assignment') { icon = '📂'; color = 'text-emerald-500'; }
+    if(lessonForm.type === 'assignment') { icon = '📋'; color = 'text-emerald-500'; }
     if(lessonForm.type === 'discussion') { icon = '💬'; color = 'text-teal-500'; }
     if(lessonForm.type === 'liveclass') { icon = '🔴'; color = 'text-red-500'; }
     setSections(sections.map(sec => sec.id === activeSectionId ? { ...sec, lessons: [...sec.lessons, { id: `les-${Date.now()}`, title: lessonForm.title, icon, color }] } : sec));
     setIsLessonModalOpen(false);
   };
-  
-  const handleDeleteLesson = (sectionId, lessonId) => { if(window.confirm("Hapus materi ini?")) { setSections(sections.map(sec => sec.id === sectionId ? { ...sec, lessons: sec.lessons.filter(l => l.id !== lessonId) } : sec)); } };
+
+  const handleDeleteLesson = (sectionId, lessonId) => { if(window.confirm("Hapus materi ini?")) setSections(sections.map(sec => sec.id === sectionId ? { ...sec, lessons: sec.lessons.filter(l => l.id !== lessonId) } : sec)); };
   const handleDragStart = (e, sectionId, lessonIndex) => { setDraggedLesson({ sectionId, lessonIndex }); };
   const handleDragOver = (e) => { e.preventDefault(); };
   const handleDrop = (e, targetSectionId, targetLessonIndex) => {
@@ -1629,76 +1629,169 @@ const CourseBuilderWizard = ({ onGoBack }) => {
     const sourceSection = newSections.find(s => s.id === draggedLesson.sectionId);
     const targetSection = newSections.find(s => s.id === targetSectionId);
     const [movedLesson] = sourceSection.lessons.splice(draggedLesson.lessonIndex, 1);
-    if (targetLessonIndex === undefined) { targetSection.lessons.push(movedLesson); } else { targetSection.lessons.splice(targetLessonIndex, 0, movedLesson); }
+    if (targetLessonIndex === undefined) targetSection.lessons.push(movedLesson); else targetSection.lessons.splice(targetLessonIndex, 0, movedLesson);
     setSections(newSections);
     setDraggedLesson(null);
   };
 
+  // FUNGSI SUBMIT DAN SIMPAN KE STATE UTAMA
+  const handleFinalSubmit = () => {
+    if (!courseData.title.trim()) {
+      alert("Harap isi Judul Modul di Tahap 1 terlebih dahulu!");
+      setStep(1);
+      return;
+    }
+
+    const finalCategory = courseData.category === 'Lainnya (Ketik Sendiri)' 
+      ? (courseData.customCategory.trim().toUpperCase() || 'UMUM') 
+      : courseData.category;
+
+    const newCourseObj = {
+      id: Date.now(),
+      category: finalCategory,
+      title: courseData.title,
+      instructor: 'Rei, S.E., M.Ak.',
+      rating: '5.0',
+      reviews: 0,
+      lessons: sections.reduce((total, s) => total + s.lessons.length, 0) || 1,
+      duration: '02:00:00',
+      old_price: courseData.price ? `Rp${(Number(courseData.price) * 1.5).toLocaleString('id-ID')}` : 'Rp100.000',
+      new_price: courseData.price ? `Rp${Number(courseData.price).toLocaleString('id-ID')}` : 'Gratis',
+      price_value: Number(courseData.price || 0),
+      color: 'from-teal-500 to-emerald-600',
+      icon: '📚',
+      status: 'In Review',
+      students: 0,
+      sections: sections
+    };
+
+    if (onAddCourse) {
+      onAddCourse(newCourseObj);
+    }
+
+    alert(`Modul "${newCourseObj.title}" berhasil diajukan! Statusnya saat ini "In Review" menunggu persetujuan Admin.`);
+    onGoBack();
+  };
+
   const renderContentByStep = () => {
     switch(step) {
-      case 1: 
+      case 1:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-slate-900 mb-4">Informasi Dasar Modul</h2>
-            <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Cover / Thumbnail Modul</label><input type="file" className="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 outline-none cursor-pointer border border-slate-200 rounded-xl mb-4" /></div>
+            <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Cover / Thumbnail Modul</label><input type="file" className="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-50 file:text-teal-700 font-medium border border-slate-200 rounded-xl p-3" /></div>
             <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Judul Modul</label><input type="text" value={courseData.title} onChange={e => setCourseData({...courseData, title: e.target.value})} placeholder="Contoh: Akuntansi Lanjutan" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Kategori</label>
                 <select value={courseData.category} onChange={e => setCourseData({...courseData, category: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 mb-3">
                   <option value="AKUNTANSI">Akuntansi</option><option value="MANAJEMEN">Manajemen</option><option value="LOGISTIK">Logistik</option>
-                  <option value="Lainnya">Lainnya (Ketik Sendiri)</option>
+                  <option value="Lainnya (Ketik Sendiri)">Lainnya (Ketik Sendiri)</option>
                 </select>
-                {courseData.category === 'Lainnya' && (
+                {courseData.category === 'Lainnya (Ketik Sendiri)' && (
                   <input type="text" value={courseData.customCategory} onChange={e => setCourseData({...courseData, customCategory: e.target.value.toUpperCase()})} placeholder="Contoh: PARIWISATA" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500" />
                 )}
               </div>
-              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Harga (Rp)</label><input type="text" placeholder="50000" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Harga (Rp)</label><input type="number" value={courseData.price} onChange={e => setCourseData({...courseData, price: e.target.value})} placeholder="0 (Gratis) / 250000" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500" /></div>
             </div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Deskripsi Singkat</label><textarea placeholder="Tuliskan gambaran singkat tentang modul ini..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 h-24 resize-none"></textarea></div>
+            <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Deskripsi Singkat</label><textarea rows="3" value={courseData.description} onChange={e => setCourseData({...courseData, description: e.target.value})} placeholder="Penjelasan singkat modul perkuliahan..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500"></textarea></div>
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button onClick={onGoBack} className="text-slate-500 font-bold hover:underline">Batalkan</button>
+              <button onClick={() => setStep(2)} className="bg-teal-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-teal-700 transition">Lanjut ke Tahap Berikutnya →</button>
+            </div>
           </div>
         );
-      case 2: return (<div className="space-y-6"><h2 className="text-2xl font-black text-slate-900 mb-4">Kurikulum & Materi (Drag & Drop)</h2><p className="text-sm text-slate-500 mb-6">Tarik icon ⣿ untuk memindahkan materi. Klik tulisan bagian/materi untuk mengganti namanya.</p>{sections.map((section) => (<div key={section.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, section.id)}><div className="flex justify-between items-center mb-4 border-b border-slate-200/50 pb-2"><input type="text" value={section.title} onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))} className="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-teal-500 outline-none w-full max-w-sm px-1 py-0.5 transition-colors" /><div className="flex items-center gap-4"><button onClick={() => { if(window.confirm("Hapus bagian ini beserta isinya?")) { setSections(sections.filter(s => s.id !== section.id)); } }} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase tracking-wider">Hapus Bagian</button><button onClick={() => openLessonModal(section.id)} className="text-xs font-bold text-teal-600 hover:underline">+ Tambah Sesi</button></div></div><div className="space-y-3 min-h-[40px]">{section.lessons.length === 0 && <p className="text-xs text-slate-400 italic text-center py-2">Belum ada materi. Tarik materi ke sini atau klik Tambah Sesi.</p>}{section.lessons.map((lesson, idx) => (<div key={lesson.id} draggable onDragStart={(e) => handleDragStart(e, section.id, idx)} onDragOver={handleDragOver} onDrop={(e) => { e.stopPropagation(); handleDrop(e, section.id, idx); }} className="bg-white p-4 rounded-lg border border-slate-200 flex items-center justify-between shadow-sm cursor-move hover:border-teal-400 transition-colors"><div className="flex items-center gap-3 w-full mr-4"><span className="text-slate-300 cursor-grab text-lg" title="Drag me">⣿</span><span className={lesson.color}>{lesson.icon}</span><input type="text" value={lesson.title} onChange={(e) => { setSections(sections.map(sec => sec.id === section.id ? { ...sec, lessons: sec.lessons.map(l => l.id === lesson.id ? { ...l, title: e.target.value } : l) } : sec )); }} className="font-bold text-sm text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-teal-500 outline-none w-full px-1 py-0.5 transition-colors" /></div><button onClick={() => handleDeleteLesson(section.id, lesson.id)} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase tracking-wider shrink-0">Hapus</button></div>))}</div></div>))}<button onClick={handleAddSection} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:border-slate-400 transition-colors">+ Tambah Bagian Baru</button></div>);
-      case 3: return (<div className="space-y-6"><h2 className="text-2xl font-black text-slate-900 mb-4">Assessment & Kelulusan</h2><div className="grid grid-cols-2 gap-6"><div onClick={() => alert("Membuka bank soal kuis...")} className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm text-center cursor-pointer hover:border-teal-500 transition-colors"><span className="text-4xl mb-3 block">📝</span><h3 className="font-bold text-slate-800">Buat Kuis Pilihan Ganda</h3></div><div onClick={() => alert("Membuka form penugasan essay...")} className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm text-center cursor-pointer hover:border-teal-500 transition-colors"><span className="text-4xl mb-3 block">📂</span><h3 className="font-bold text-slate-800">Buat Tugas Upload File</h3></div></div><div className="mt-8 border-t border-slate-200 pt-6"><div className="flex items-center justify-between"><h3 className="font-bold text-slate-800">Syarat Sertifikat</h3><input type="checkbox" defaultChecked className="w-5 h-5" /></div><p className="text-xs text-slate-500 mt-1">Sertifikat otomatis diterbitkan jika siswa menyelesaikan semua materi.</p></div></div>);
-      case 4: return (<div className="space-y-6 text-center py-10"><span className="text-6xl mb-4 block">🚀</span><h2 className="text-3xl font-black text-slate-900 mb-2">Siap untuk dipublikasikan?</h2><p className="text-slate-500 mb-8 max-w-md mx-auto">Modul ini akan masuk ke status "In Review" dan akan diperiksa oleh Admin sebelum tampil di Katalog.</p><button onClick={() => { alert("Modul berhasil di-submit untuk direview Admin!"); onGoBack(); }} className="bg-teal-600 text-white px-10 py-4 rounded-xl font-black shadow-lg hover:bg-teal-700 transition-transform hover:-translate-y-1">Submit for Review</button></div>);
-      default: return null;
+      case 2:
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black text-slate-900 mb-2 text-center">Kurikulum & Materi (Drag & Drop)</h2>
+            <p className="text-xs text-slate-500 text-center mb-6">Tarik icon ⠿ untuk memindahkan materi. Klik tombol tambah sesi untuk menyematkan video atau berkas.</p>
+            {sections.map((section) => (
+              <div key={section.id} className="p-6 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800">{section.title}</h3>
+                  <button onClick={() => openLessonModal(section.id)} className="text-teal-600 font-bold text-xs hover:underline">+ Tambah Sesi</button>
+                </div>
+                <div className="space-y-2">
+                  {section.lessons.map((lesson, idx) => (
+                    <div key={lesson.id} draggable onDragStart={(e) => handleDragStart(e, section.id, idx)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, section.id, idx)} className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl cursor-move shadow-sm hover:border-teal-500 transition">
+                      <div className="flex items-center gap-3"><span className="text-slate-300 font-black">⠿</span><span>{lesson.icon}</span><span className="text-sm font-semibold text-slate-800">{lesson.title}</span></div>
+                      <button onClick={() => handleDeleteLesson(section.id, lesson.id)} className="text-rose-500 text-xs font-bold hover:underline">HAPUS</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button onClick={handleAddSection} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl font-bold text-slate-500 hover:border-teal-500 hover:text-teal-600 transition">+ Tambah Bagian Baru</button>
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button onClick={() => setStep(1)} className="text-slate-500 font-bold hover:underline">← Kembali</button>
+              <button onClick={() => setStep(3)} className="bg-teal-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-teal-700 transition">Lanjut ke Tahap Berikutnya →</button>
+            </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Assessment & Ujian Modul</h2>
+            <p className="text-xs text-slate-500 mb-6">Atur bobot kuis kelulusan untuk mahasiswa.</p>
+            <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-4">
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Passing Grade Kuis (%)</label><input type="number" defaultValue="75" className="w-full p-4 rounded-xl border border-slate-200 font-bold text-teal-600" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Instruksi Tugas Akhir</label><textarea rows="3" defaultValue="Kumpulkan laporan analisis siklus akuntansi dalam format PDF maksimal 5 halaman." className="w-full p-4 rounded-xl border border-slate-200"></textarea></div>
+            </div>
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <button onClick={() => setStep(2)} className="text-slate-500 font-bold hover:underline">← Kembali</button>
+              <button onClick={() => setStep(4)} className="bg-teal-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-teal-700 transition">Review & Publish →</button>
+            </div>
+          </div>
+        );
+      case 4:
+        return (
+          <div className="text-center py-12 space-y-6">
+            <div className="text-6xl animate-bounce">🚀</div>
+            <h2 className="text-3xl font-black text-slate-900">Siap untuk dipublikasikan?</h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">Modul ini akan masuk ke status <strong>"In Review"</strong> di tab Course Saya dan akan diperiksa oleh Admin sebelum tampil di Katalog Publik.</p>
+            <div className="pt-4 flex justify-center gap-4">
+              <button onClick={() => setStep(3)} className="px-6 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100">← Kembali</button>
+              <button onClick={handleFinalSubmit} className="bg-teal-600 hover:bg-teal-700 text-white px-10 py-4 rounded-xl font-extrabold text-base shadow-lg shadow-teal-600/30 transition transform hover:-translate-y-0.5">Submit for Review</button>
+            </div>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <>
-      <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] overflow-hidden relative">
-        <div className="flex border-b border-slate-100 bg-slate-50/50">{[1, 2, 3, 4].map((num) => (<div key={num} onClick={() => setStep(num)} className={`flex-1 p-5 text-center font-bold text-sm cursor-pointer transition-colors ${step === num ? 'bg-white border-t-4 border-t-teal-500 text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>{num === 1 && "1. Informasi Dasar"}{num === 2 && "2. Kurikulum"}{num === 3 && "3. Assessment"}{num === 4 && "4. Review & Publish"}</div>))}</div>
-        <div className="p-10">{renderContentByStep()}</div>
-        {step < 4 && (<div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between"><button onClick={onGoBack} className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800">Batalkan</button><button onClick={() => setStep(step + 1)} className="bg-teal-600 text-white px-8 py-3 rounded-xl font-bold shadow-sm hover:bg-teal-700">Lanjut ke Tahap Berikutnya →</button></div>)}
+    <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-6 mb-8">
+        {[1, 2, 3, 4].map((s) => (
+          <div key={s} className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${step === s ? 'bg-teal-600 text-white' : step > s ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>{step > s ? '✓' : s}</div>
+            <span className={`text-xs font-bold ${step === s ? 'text-slate-900' : 'text-slate-400'}`}>{s === 1 ? 'Informasi' : s === 2 ? 'Kurikulum' : s === 3 ? 'Assessment' : 'Review'}</span>
+          </div>
+        ))}
       </div>
+      {renderContentByStep()}
 
-      {/* Modal Tambah Materi Baru */}
       {isLessonModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-lg shadow-2xl space-y-6">
-            <div className="flex justify-between items-center"><h3 className="text-2xl font-black text-slate-900">Tambah Materi Baru</h3><button onClick={() => setIsLessonModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button></div>
-            <div className="space-y-4">
-              <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Format Materi</label>
-                <select value={lessonForm.type} onChange={(e) => setLessonForm({...lessonForm, type: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 bg-slate-50 font-semibold text-slate-700">
-                  <option value="youtube">🎥 Video YouTube / Vimeo</option><option value="video">📤 Upload File Video (MP4)</option><option value="document">📄 File Dokumen (PDF, PPT, Word)</option><option value="link">🔗 Tautan Eksternal / Web</option>
-                  <option value="quiz">📝 Kuis / Latihan Soal</option><option value="assignment">📂 Penugasan / Upload Tugas</option><option value="discussion">💬 Forum Diskusi Topik</option><option value="liveclass">🔴 Sesi Live (Zoom/GMeet)</option>
-                </select>
-              </div>
-              <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Judul Materi</label><input type="text" value={lessonForm.title} onChange={(e) => setLessonForm({...lessonForm, title: e.target.value})} placeholder="Contoh: Kuis Modul 1" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
-              {lessonForm.type === 'youtube' || lessonForm.type === 'link' || lessonForm.type === 'liveclass' ? (
-                <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">{lessonForm.type === 'liveclass' ? 'Tautan Meeting (Zoom/GMeet)' : 'Tautan URL'}</label><input type="text" placeholder="https://..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500" /></div>
-              ) : lessonForm.type === 'document' || lessonForm.type === 'video' ? (
-                <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Unggah File</label><input type="file" className="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 outline-none cursor-pointer border border-slate-200 rounded-xl" /></div>
-              ) : (
-                <div className="p-4 bg-teal-50 border border-teal-100 rounded-xl"><p className="text-xs text-teal-700 font-bold">{lessonForm.type === 'quiz' && '📝 Setelah ditambahkan, Anda dapat menyusun butir soal di tab Assessment.'}{lessonForm.type === 'assignment' && '📂 Setelah ditambahkan, Anda dapat mengatur rubrik dan batas waktu pengumpulan.'}{lessonForm.type === 'discussion' && '💬 Topik diskusi akan otomatis dibuat berdasarkan judul ini.'}</p></div>
-              )}
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
+            <h3 className="font-black text-lg text-slate-900">Tambah Sesi Pembelajaran</h3>
+            <div><label className="text-xs font-bold text-slate-500 block mb-1">Judul Sesi</label><input type="text" value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="w-full p-3 border rounded-xl" /></div>
+            <div>
+              <label className="text-xs font-bold text-slate-500 block mb-1">Tipe Sesi</label>
+              <select value={lessonForm.type} onChange={e => setLessonForm({...lessonForm, type: e.target.value})} className="w-full p-3 border rounded-xl bg-slate-50">
+                <option value="youtube">Video YouTube</option>
+                <option value="pdf">Dokumen PDF / Slide</option>
+                <option value="quiz">Kuis Interaktif</option>
+                <option value="assignment">Tugas Mandiri</option>
+              </select>
             </div>
-            <div className="flex space-x-3 pt-4 border-t border-slate-100"><button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Batal</button><button onClick={submitLesson} className="flex-1 py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 shadow-md transition-colors">Simpan Materi</button></div>
+            <div className="flex gap-2 pt-2"><button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm">Batal</button><button onClick={submitLesson} className="flex-1 py-2.5 bg-teal-600 text-white font-bold rounded-xl text-sm">Tambahkan</button></div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
@@ -1708,7 +1801,11 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
   const navigate = useNavigate();
   const isActive = (path) => location.pathname.includes(path);
 
-  const [instructorCourses] = useState(initialCourses);
+  const [instructorCourses, setInstructorCourses] = useState(initialCourses);
+
+  const handleAddCourse = (newCourse) => {
+  setInstructorCourses((prev) => [newCourse, ...prev]);
+};
   const [blogs, setBlogs] = useState(initialBlogs);
   const [activeTab, setActiveTab] = useState('courses');
   const [isBuildingCourse, setIsBuildingCourse] = useState(false);
@@ -2053,7 +2150,7 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
 
       <div className="flex-1 p-10 overflow-y-auto relative">
         {isBuildingCourse ? (
-          <CourseBuilderWizard onGoBack={() => setIsBuildingCourse(false)} />
+          <CourseBuilderWizard onGoBack={() => setIsBuildingCourse(false)} onAddCourse={handleAddCourse} />
         ) : (
           <>
             {isActive('dasbor') && renderDashboard()}
