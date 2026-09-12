@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 
 // --- DATA DUMMY GLOBAL ---
@@ -31,6 +31,25 @@ const initialBlogs = [
   { id: 1, title: "Pentingnya Pembelajaran Konstruktivis di Era AI", author: "Rei, S.E., M.Ak.", date: "05 Sep 2026", category: "Edukasi", status: "Published", excerpt: "Membahas bagaimana teknologi AI dapat berkolaborasi dengan pedagogi konstruktivis untuk menciptakan interaksi belajar yang tidak membosankan..." },
   { id: 2, title: "Tren Manajemen Rantai Pasok Modern 2027", author: "Tim Lentera", date: "01 Sep 2026", category: "Logistik", status: "Published", excerpt: "Prediksi dan pemetaan tren terbaru dalam dunia logistik, e-commerce, dan otomatisasi supply chain secara global..." }
 ];
+
+const initialSettings = {
+  platformName: "Mondy",
+  heroTitle: "Aplikasi Belajar Kuliah No 1 di Indonesia",
+  seoDesc: "Akses video dari dosen universitas top, sambil melihat pembahasan dan rangkuman soal, disertai AI untuk membantumu meraih IPK idaman.",
+  primaryColor: "#9333EA",
+  fontSize: "16px",
+  logoUrl: "",
+  heroBanner: "",
+  adBannerUrl: "",
+  adLink: ""
+};
+
+const initialInstructorProfile = {
+  name: "Rei, S.E., M.Ak.",
+  title: "Ketua Peneliti Lentera Mondial",
+  bio: "Berpengalaman dalam pengembangan sistem informasi akuntansi dan E-Learning Management System (LMS).",
+  avatar: ""
+};
 
 // --- KOMPONEN PUBLIK (NAVBAR & FOOTER) ---
 const Navbar = ({ settings }) => {
@@ -127,25 +146,25 @@ const SupportPage = ({ settings, type }) => {
 
 const CourseCard = ({ course }) => (
   <div className="bg-[#121826] rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl hover:border-purple-500/50 transition-all duration-500 flex flex-col group hover:-translate-y-2 cursor-pointer hover:shadow-purple-500/10">
-    <div className={`h-48 bg-gradient-to-br ${course.color} relative flex flex-col justify-between p-6 overflow-hidden`}>
+    <div className={`h-48 bg-gradient-to-br ${course.color || 'from-teal-500 to-emerald-600'} relative flex flex-col justify-between p-6 overflow-hidden`}>
       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
       <div className="relative z-10 flex justify-between items-start">
         <span className="bg-white/20 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest backdrop-blur-md border border-white/20 text-white">{course.category}</span>
         <span className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md text-white border border-white/20 text-xs">🤍</span>
       </div>
-      <div className="text-center text-6xl opacity-90 group-hover:scale-110 transition-transform duration-300 relative z-10">{course.icon}</div>
+      <div className="text-center text-6xl opacity-90 group-hover:scale-110 transition-transform duration-300 relative z-10">{course.icon || '📚'}</div>
     </div>
     <div className="p-7 flex flex-col flex-1 bg-[#121826] text-white">
       <div className="flex items-center justify-between mb-4">
         <div className="flex text-amber-400 text-sm">★★★★★</div>
-        <span className="text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">{course.rating} ({course.reviews})</span>
+        <span className="text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">{course.rating || '5.0'} ({course.reviews || 0})</span>
       </div>
       <h3 className="font-extrabold text-white text-xl leading-tight mb-3 flex-1 group-hover:text-purple-400 transition-colors line-clamp-2">{course.title}</h3>
       <p className="text-sm font-bold text-slate-400 mb-6 flex items-center gap-2">👨‍🏫 {course.instructor}</p>
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/10">
         <div>
-          <p className="text-xs font-bold text-slate-500 line-through mb-1">{course.oldPrice}</p>
-          <p className="text-2xl font-black text-white tracking-tight">{course.newPrice}</p>
+          <p className="text-xs font-bold text-slate-500 line-through mb-1">{course.old_price || course.oldPrice}</p>
+          <p className="text-2xl font-black text-white tracking-tight">{course.new_price || course.newPrice}</p>
         </div>
         <Link to={`/detail/${course.id}`} className="px-6 py-3 rounded-2xl font-bold text-sm text-white shadow-lg transition-transform hover:scale-105" style={{ background: 'linear-gradient(135deg, #9333EA 0%, #4F46E5 100%)' }}>Detail Kelas</Link>
       </div>
@@ -153,8 +172,10 @@ const CourseCard = ({ course }) => (
   </div>
 );
 
-const Home = ({ settings }) => {
+const Home = ({ settings, courses }) => {
   const navigate = useNavigate();
+  const displayedCourses = (courses || initialCourses).filter(c => c.status === 'Published');
+
   return (
     <div className="min-h-screen flex flex-col bg-[#090D16] text-white font-sans selection:bg-purple-500 selection:text-white" style={{ fontSize: settings?.fontSize || '16px' }}>
       <Navbar settings={settings} />
@@ -232,11 +253,11 @@ const Home = ({ settings }) => {
             <div className="flex flex-col md:flex-row justify-between items-end mb-16">
               <div className="max-w-2xl">
                 <h2 className="text-sm font-extrabold text-purple-400 tracking-widest uppercase mb-4">Kelas Tersedia</h2>
-                <h3 className="text-4xl md:text-5xl font-black text-white tracking-tight">Pilih topik dan mulai upgrade *skill* hari ini.</h3>
+                <h3 className="text-4xl md:text-5xl font-black text-white tracking-tight">Pilih topik dan mulai upgrade skill hari ini.</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              {initialCourses.map(course => <CourseCard key={course.id} course={course} />)}
+              {displayedCourses.map(course => <CourseCard key={course.id} course={course} />)}
             </div>
           </div>
         </section>
@@ -274,38 +295,43 @@ const PublicArticleList = ({ settings }) => (
   </div>
 );
 
-const Catalog = ({ settings }) => (
-  <div className="min-h-screen flex flex-col bg-[#090D16] text-white font-sans" style={{ fontSize: settings?.fontSize || '16px' }}>
-    <Navbar settings={settings} />
-    <div className="bg-[#0B0F19] border-b border-white/10 py-16 px-6">
-      <div className="max-w-7xl mx-auto text-center">
-        <h1 className="text-5xl font-black text-white mb-8 tracking-tight">Katalog Try Out & Kelas</h1>
-        <div className="flex items-center border border-white/10 rounded-3xl overflow-hidden max-w-2xl mx-auto bg-[#121826] shadow-xl">
-          <span className="pl-6 text-2xl opacity-50">🔍</span>
-          <input type="text" placeholder="Cari skill yang ingin dipelajari..." className="flex-1 p-5 outline-none text-white font-bold placeholder-slate-500 bg-transparent text-lg" />
-          <button className="px-8 text-white font-bold h-full transition-colors text-lg" style={{ backgroundColor: settings?.primaryColor || '#9333EA' }}>Cari</button>
+const Catalog = ({ settings, courses }) => {
+  const displayedCourses = (courses || initialCourses).filter(c => c.status === 'Published');
+  return (
+    <div className="min-h-screen flex flex-col bg-[#090D16] text-white font-sans" style={{ fontSize: settings?.fontSize || '16px' }}>
+      <Navbar settings={settings} />
+      <div className="bg-[#0B0F19] border-b border-white/10 py-16 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-5xl font-black text-white mb-8 tracking-tight">Katalog Try Out & Kelas</h1>
+          <div className="flex items-center border border-white/10 rounded-3xl overflow-hidden max-w-2xl mx-auto bg-[#121826] shadow-xl">
+            <span className="pl-6 text-2xl opacity-50">🔍</span>
+            <input type="text" placeholder="Cari skill yang ingin dipelajari..." className="flex-1 p-5 outline-none text-white font-bold placeholder-slate-500 bg-transparent text-lg" />
+            <button className="px-8 text-white font-bold h-full transition-colors text-lg" style={{ backgroundColor: settings?.primaryColor || '#9333EA' }}>Cari</button>
+          </div>
         </div>
       </div>
-    </div>
-    <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-20">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {initialCourses.map(course => <CourseCard key={course.id} course={course} />)}
+      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {displayedCourses.map(course => <CourseCard key={course.id} course={course} />)}
+        </div>
       </div>
+      <Footer settings={settings} />
     </div>
-    <Footer settings={settings} />
-  </div>
-);
+  );
+};
 
-const CourseDetail = ({ settings, instructorProfile }) => {
+const CourseDetail = ({ settings, instructorProfile, courses }) => {
   const navigate = useNavigate();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState('');
   const [cartCount, setCartCount] = useState(0);
 
-  const course = initialCourses[0]; 
+  const courseList = courses || initialCourses;
+  const course = courseList[0]; 
   const adminFee = 2000;
-  const totalPayment = course.priceValue + adminFee;
+  const priceVal = course.price_value !== undefined ? course.price_value : (course.priceValue || 50000);
+  const totalPayment = priceVal + adminFee;
 
   const handlePreview = () => alert("Memuat pemutar video... \n\nMemutar pratinjau materi: Identifikasi Dokumen Sumber.");
   const handleDirectCheckout = () => { setIsCheckoutOpen(true); setCheckoutStep(1); };
@@ -327,7 +353,7 @@ const CourseDetail = ({ settings, instructorProfile }) => {
           <div className="max-w-3xl mx-auto">
             <span className="bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-purple-400 mb-4 inline-block">{course.category}</span>
             <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">{course.title}</h1>
-            <p className="text-base text-slate-400 mb-8 max-w-2xl mx-auto">Kuasai pencatatan jurnal khusus, buku besar pembantu, hingga penyusunan laporan keuangan melalui pendekatan konstruktivis.</p>
+            <p className="text-base text-slate-400 mb-8 max-w-2xl mx-auto">Kuasai materi perkuliahan secara komprehensif bersama dosen ahli.</p>
           </div>
         </div>
       </div>
@@ -384,7 +410,6 @@ const CourseDetail = ({ settings, instructorProfile }) => {
             </div>
           </div>
 
-          {/* KARTU PROFIL INSTRUKTUR */}
           <div className="bg-[#121826] p-8 rounded-[2rem] border border-white/10 shadow-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
             <div className="w-24 h-24 shrink-0 bg-purple-900/30 rounded-full overflow-hidden border-2 border-purple-500/30 flex items-center justify-center text-3xl">
               {instructorProfile?.avatar ? (
@@ -404,8 +429,8 @@ const CourseDetail = ({ settings, instructorProfile }) => {
         <div className="w-full lg:w-[360px] shrink-0">
           <div className="bg-[#121826] rounded-[2rem] border border-white/10 shadow-xl p-6 sticky top-28">
             <div className="text-center mb-6">
-              <h3 className="text-4xl font-extrabold text-white mb-1">{course.newPrice}</h3>
-              <p className="text-slate-500 line-through text-sm font-medium">{course.oldPrice}</p>
+              <h3 className="text-4xl font-extrabold text-white mb-1">{course.new_price || course.newPrice}</h3>
+              <p className="text-slate-500 line-through text-sm font-medium">{course.old_price || course.oldPrice}</p>
             </div>
             <div className="space-y-3 mb-6">
               <button onClick={handleDirectCheckout} className="w-full text-white font-bold py-3.5 rounded-xl shadow-md transition-colors" style={{ backgroundColor: settings?.primaryColor || '#9333EA' }}>Daftar Kelas Ini</button>
@@ -417,7 +442,7 @@ const CourseDetail = ({ settings, instructorProfile }) => {
             <div className="pt-4 border-t border-white/10">
               <h4 className="font-bold text-white text-sm mb-3">Kursus ini termasuk:</h4>
               <ul className="space-y-2 text-sm text-slate-400 font-medium">
-                <li className="flex items-center space-x-2"><span>🎥</span><span>{course.duration} jam Video On-Demand</span></li>
+                <li className="flex items-center space-x-2"><span>🎥</span><span>{course.duration} Video On-Demand</span></li>
                 <li className="flex items-center space-x-2"><span>📚</span><span>{course.lessons} Modul Pembelajaran</span></li>
                 <li className="flex items-center space-x-2"><span>♾️</span><span>Akses selamanya</span></li>
                 <li className="flex items-center space-x-2"><span>🏆</span><span>Sertifikat kelulusan ber-QR code</span></li>
@@ -428,7 +453,6 @@ const CourseDetail = ({ settings, instructorProfile }) => {
       </div>
       <Footer settings={settings} />
 
-      {/* Checkout Modal */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-[#121826] text-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl relative border border-white/10">
@@ -445,7 +469,7 @@ const CourseDetail = ({ settings, instructorProfile }) => {
                   </div>
                 </div>
                 <div className="bg-[#090D16] p-5 rounded-xl border border-white/10 space-y-3">
-                  <div className="flex justify-between text-sm font-semibold text-slate-300"><span>Harga Modul</span><span>{course.newPrice}</span></div>
+                  <div className="flex justify-between text-sm font-semibold text-slate-300"><span>Harga Modul</span><span>{course.new_price || course.newPrice}</span></div>
                   <div className="flex justify-between text-sm font-semibold text-slate-300"><span>Biaya Admin (Platform)</span><span>Rp2.000</span></div>
                   <div className="pt-3 mt-3 border-t border-white/10 flex justify-between items-end">
                     <span className="font-bold text-white">Total Pembayaran</span>
@@ -615,7 +639,6 @@ const Dashboard = ({ settings }) => (
         </div>
       </header>
 
-      {/* Menu Tombol Cepat Menuju Sertifikat Saya */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link to="/sertifikat" className="bg-[#121826] p-6 rounded-3xl border border-white/10 flex items-center justify-between hover:border-purple-500/50 transition-all hover:scale-[1.02] group shadow-xl">
           <div className="flex items-center space-x-4">
@@ -672,7 +695,7 @@ const Dashboard = ({ settings }) => (
   </div>
 );
 
-// --- RUANG BELAJAR (LEARNING ROOM) INTERAKTIF DENGAN TAB DISKUSI DOSEN & MAHASISWA ---
+// --- RUANG BELAJAR (LEARNING ROOM) INTERAKTIF ---
 const LearningRoom = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('transcript');
@@ -755,7 +778,6 @@ const LearningRoom = () => {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 overflow-hidden">
         <div className="lg:col-span-2 p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar">
-          
           {progressPercent === 100 && (
             <div className="bg-gradient-to-r from-emerald-600/20 to-purple-600/20 p-6 rounded-[2rem] border border-emerald-500/40 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl animate-fadeIn">
               <div className="space-y-1 text-center md:text-left">
@@ -773,13 +795,11 @@ const LearningRoom = () => {
           <div className="w-full aspect-video bg-[#121826] rounded-[2.5rem] overflow-hidden shadow-2xl relative border border-white/10 flex flex-col items-center justify-center group">
             <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-black/30"></div>
             <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300">Mondy Academy</div>
-            <div className="absolute inset-0 flex items-center justify-center opacity-80 pointer-events-none">
-              <div className="text-center space-y-2">
-                <span className="text-7xl block animate-bounce">🎥</span>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memutar: {currentVideo.title}</p>
-              </div>
+            <div className="text-center space-y-2 relative z-10">
+              <span className="text-7xl block animate-bounce">🎥</span>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memutar: {currentVideo.title}</p>
             </div>
-            <div onClick={() => alert(`Memutar video sesi: ${currentVideo.title}`)} className="w-20 h-20 bg-purple-600/90 hover:bg-purple-600 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 shadow-2xl z-10 border border-white/20">
+            <div onClick={() => alert(`Memutar video sesi: ${currentVideo.title}`)} className="w-20 h-20 bg-purple-600/90 hover:bg-purple-600 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 shadow-2xl z-10 border border-white/20 mt-4">
               <span className="text-2xl ml-1 text-white">▶️</span>
             </div>
           </div>
@@ -949,7 +969,7 @@ const LearningRoom = () => {
 
 const Assessment = () => (<div className="min-h-screen bg-[#090D16] text-white flex flex-col items-center justify-center p-6 text-center"><div className="bg-[#121826] border border-white/10 p-16 rounded-[3rem] shadow-2xl max-w-2xl w-full"><span className="text-7xl mb-8 block drop-shadow-lg">📝</span><h1 className="text-4xl font-black mb-4 text-white tracking-tight">Latihan Terakhir</h1><p className="font-bold text-slate-400 mb-10">Uji pemahamanmu sebelum meraih sertifikat kelulusan.</p><Link to="/sertifikat" className="bg-emerald-500 text-white px-8 py-5 rounded-2xl font-black text-xl block w-full shadow-xl hover:-translate-y-1 transition-transform">Kumpul & Klaim Sertifikat 🏆</Link></div></div>);
 
-// --- HALAMAN SERTIFIKAT KELULUSAN DENGAN TOMBOL DOWNLOAD ---
+// --- HALAMAN SERTIFIKAT KELULUSAN ---
 const Certificate = () => {
   const navigate = useNavigate();
 
@@ -997,12 +1017,12 @@ const Certificate = () => {
 };
 
 // --- ADMIN PORTAL ---
-const AdminLayout = ({ settings, setSettings }) => {
+const AdminLayout = ({ settings, setSettings, courses, onApproveCourse }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isActive = (path) => location.pathname.includes(path);
   
-  const [adminCourses, setAdminCourses] = useState(initialCourses);
+  const adminCourses = courses || initialCourses;
   const [users, setUsers] = useState(initialUsers);
   const [ebooks, setEbooks] = useState(initialEbooks);
   const [tickets, setTickets] = useState(initialTicketsAdmin);
@@ -1103,7 +1123,6 @@ const AdminLayout = ({ settings, setSettings }) => {
 
   const handleApproveUser = (id) => { setUsers(users.map(u => u.id === id ? { ...u, status: 'Active' } : u)); };
   const handleRejectUser = (id) => { if(window.confirm("Tolak dan hapus pendaftaran pengguna ini?")) { setUsers(users.filter(u => u.id !== id)); } };
-  const handleApproveCourse = (id) => { setAdminCourses(adminCourses.map(c => c.id === id ? { ...c, status: 'Published' } : c)); };
 
   const filteredCourses = adminCourses.filter(course => 
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1120,14 +1139,6 @@ const AdminLayout = ({ settings, setSettings }) => {
   
   const handleSave = () => {
     if (!formData.title.trim()) return alert("Judul tidak boleh kosong!");
-    const finalCategory = formData.category === 'Lainnya' ? (formData.customCategory || 'UMUM') : formData.category;
-
-    if (editId) { 
-      setAdminCourses(adminCourses.map(c => c.id === editId ? { ...c, ...formData, category: finalCategory } : c)); 
-    } else {
-      const newCourse = { id: Date.now(), ...formData, category: finalCategory, instructor: "Admin", rating: "0.0", reviews: 0, lessons: 0, duration: "00:00:00", oldPrice: "-", newPrice: "Rp0", color: "from-slate-400 to-slate-600", icon: "📁", status: "Published", students: 0 };
-      setAdminCourses([newCourse, ...adminCourses]);
-    }
     setIsModalOpen(false);
   };
 
@@ -1199,7 +1210,7 @@ const AdminLayout = ({ settings, setSettings }) => {
                   <td className="px-6 py-5 font-bold text-slate-800">{course.title}</td>
                   <td className="px-6 py-5"><span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold">{course.category}</span></td>
                   <td className="px-6 py-5"><span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${course.status === 'Published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{course.status}</span></td>
-                  <td className="px-6 py-5 text-center space-x-4"><button onClick={() => handleEdit(course)} className="text-blue-600 font-bold hover:underline">Edit</button><button onClick={() => handleDeleteItem(setAdminCourses, adminCourses, course.id)} className="text-red-500 font-bold hover:underline">Hapus</button></td>
+                  <td className="px-6 py-5 text-center space-x-4"><button onClick={() => handleEdit(course)} className="text-blue-600 font-bold hover:underline">Edit</button><button onClick={() => handleDeleteItem(null, null, course.id)} className="text-red-500 font-bold hover:underline">Hapus</button></td>
                 </tr>
               ))}
               {activeMoocTab === 'review' && adminCourses.filter(c => c.status === 'In Review').map((course) => (
@@ -1208,7 +1219,7 @@ const AdminLayout = ({ settings, setSettings }) => {
                   <td className="px-6 py-5"><span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold">{course.category}</span></td>
                   <td className="px-6 py-5"><span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase">In Review</span></td>
                   <td className="px-6 py-5 text-center space-x-3">
-                    <button onClick={() => handleApproveCourse(course.id)} className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-green-600">Setujui & Publish</button>
+                    <button onClick={() => onApproveCourse && onApproveCourse(course.id)} className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-green-600">Setujui & Publish</button>
                     <button onClick={() => actionAlert('Revisi', course.title)} className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200">Minta Revisi</button>
                   </td>
                 </tr>
@@ -1515,6 +1526,30 @@ const AdminLayout = ({ settings, setSettings }) => {
               </div>
             </div>
           )}
+          {activeSettingTab === 'pembelajaran' && (
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Standar Kelulusan Passing Grade (%)</label>
+                <input type="number" defaultValue="75" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Kebijakan Sesi Ujian Ulang (Retake Limit)</label>
+                <input type="number" defaultValue="3" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
+              </div>
+            </div>
+          )}
+          {activeSettingTab === 'pembayaran' && (
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Merchant ID (Lynk.id / Midtrans)</label>
+                <input type="text" defaultValue="MONDY-PAY-88291" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Biaya Layanan Platform (Admin Fee Rp)</label>
+                <input type="number" defaultValue="2000" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1549,43 +1584,6 @@ const AdminLayout = ({ settings, setSettings }) => {
         {isActive('blog') && renderBlog()}
         {isActive('pengaturan') && renderPengaturan()}
       </div>
-
-      {isBlogModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-black text-slate-900">{editBlogId ? 'Edit Artikel' : 'Tulis Artikel Baru'}</h3>
-              <button onClick={() => setIsBlogModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Judul Artikel</label>
-                <input type="text" value={blogForm.title} onChange={(e) => setBlogForm({...blogForm, title: e.target.value})} placeholder="Masukkan judul..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Kategori Topik</label>
-                <select value={blogForm.category} onChange={(e) => setBlogForm({...blogForm, category: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-slate-50 font-semibold text-slate-700 mb-3">
-                  <option value="Edukasi">Edukasi</option><option value="Logistik">Logistik</option><option value="Manajemen">Manajemen</option><option value="Akuntansi">Akuntansi</option><option value="Umum">Umum</option>
-                  <option value="Lainnya">Lainnya (Ketik Sendiri)</option>
-                </select>
-                {blogForm.category === 'Lainnya' && (
-                  <input type="text" value={blogForm.customCategory} onChange={(e) => setBlogForm({...blogForm, customCategory: e.target.value})} placeholder="Contoh: Pariwisata, Sistem Informasi..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-semibold" />
-                )}
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Isi Artikel / Ringkasan</label>
-                <textarea value={blogForm.excerpt} onChange={(e) => setBlogForm({...blogForm, excerpt: e.target.value})} placeholder="Tuliskan isi artikel Anda di sini..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-blue-500 min-h-[150px] resize-y"></textarea>
-              </div>
-            </div>
-
-            <div className="flex space-x-3 pt-4 border-t border-slate-100">
-              <button onClick={() => setIsBlogModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Batal</button>
-              <button onClick={handleSaveBlog} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-md transition-colors">Publikasikan Artikel</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -1634,8 +1632,7 @@ const CourseBuilderWizard = ({ onGoBack, onAddCourse }) => {
     setDraggedLesson(null);
   };
 
-  // FUNGSI SUBMIT DAN SIMPAN KE STATE UTAMA
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!courseData.title.trim()) {
       alert("Harap isi Judul Modul di Tahap 1 terlebih dahulu!");
       setStep(1);
@@ -1646,30 +1643,20 @@ const CourseBuilderWizard = ({ onGoBack, onAddCourse }) => {
       ? (courseData.customCategory.trim().toUpperCase() || 'UMUM') 
       : courseData.category;
 
-    const newCourseObj = {
-      id: Date.now(),
-      category: finalCategory,
+    const payload = {
       title: courseData.title,
+      category: finalCategory,
       instructor: 'Rei, S.E., M.Ak.',
-      rating: '5.0',
-      reviews: 0,
-      lessons: sections.reduce((total, s) => total + s.lessons.length, 0) || 1,
-      duration: '02:00:00',
-      old_price: courseData.price ? `Rp${(Number(courseData.price) * 1.5).toLocaleString('id-ID')}` : 'Rp100.000',
-      new_price: courseData.price ? `Rp${Number(courseData.price).toLocaleString('id-ID')}` : 'Gratis',
       price_value: Number(courseData.price || 0),
-      color: 'from-teal-500 to-emerald-600',
-      icon: '📚',
       status: 'In Review',
-      students: 0,
-      sections: sections
+      duration: '02:00:00'
     };
 
     if (onAddCourse) {
-      onAddCourse(newCourseObj);
+      await onAddCourse(payload);
     }
 
-    alert(`Modul "${newCourseObj.title}" berhasil diajukan! Statusnya saat ini "In Review" menunggu persetujuan Admin.`);
+    alert(`Modul "${courseData.title}" berhasil diajukan dan disimpan! Statusnya saat ini "In Review" menunggu persetujuan Admin.`);
     onGoBack();
   };
 
@@ -1796,16 +1783,12 @@ const CourseBuilderWizard = ({ onGoBack, onAddCourse }) => {
 };
 
 // --- PORTAL INSTRUKTUR LENGKAP DENGAN FITUR FUNGSIONAL ---
-const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
+const InstructorLayout = ({ instructorProfile, setInstructorProfile, courses, onAddCourse }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isActive = (path) => location.pathname.includes(path);
 
-  const [instructorCourses, setInstructorCourses] = useState(initialCourses);
-
-  const handleAddCourse = (newCourse) => {
-  setInstructorCourses((prev) => [newCourse, ...prev]);
-};
+  const instructorCourses = courses || initialCourses;
   const [blogs, setBlogs] = useState(initialBlogs);
   const [activeTab, setActiveTab] = useState('courses');
   const [isBuildingCourse, setIsBuildingCourse] = useState(false);
@@ -1889,6 +1872,45 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
       </div>
     </>
   );
+
+  const renderCourseSaya = () => {
+    let filtered = instructorCourses;
+    if (activeTab === 'published') filtered = instructorCourses.filter(c => c.status === 'Published');
+    if (activeTab === 'inreview') filtered = instructorCourses.filter(c => c.status === 'In Review');
+
+    return (
+      <>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-extrabold text-slate-900">Course Saya</h1>
+          <button onClick={() => setIsBuildingCourse(true)} className="bg-teal-600 text-white px-5 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">+ Buat Modul</button>
+        </div>
+        <div className="flex space-x-2 border-b border-slate-200 mb-6">
+          <button onClick={() => setActiveTab('courses')} className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'courses' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Semua Course</button>
+          <button onClick={() => setActiveTab('inreview')} className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'inreview' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>In Review <span className="ml-2 bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full text-[10px]">{instructorCourses.filter(c => c.status === 'In Review').length}</span></button>
+          <button onClick={() => setActiveTab('published')} className={`py-3 px-6 font-bold text-sm border-b-2 transition-colors ${activeTab === 'published' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Published</button>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px] text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
+                <tr><th className="px-6 py-4 font-bold">JUDUL MODUL</th><th className="px-6 py-4 font-bold">KATEGORI</th><th className="px-6 py-4 font-bold">STATUS</th><th className="px-6 py-4 font-bold">HARGA</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map(course => (
+                  <tr key={course.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-5 font-bold text-slate-800">{course.title}</td>
+                    <td className="px-6 py-5"><span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded text-xs font-bold">{course.category}</span></td>
+                    <td className="px-6 py-5"><span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${course.status === 'Published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{course.status}</span></td>
+                    <td className="px-6 py-5 font-bold text-slate-900">{course.new_price || course.newPrice || 'Gratis'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
+    );
+  };
 
   const renderMaterials = () => (
     <>
@@ -2114,6 +2136,38 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
     </>
   );
 
+  const renderPengaturan = () => {
+    return (
+      <div className="max-w-4xl mx-auto pb-16">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-extrabold text-slate-900">Pengaturan Akun Instruktur</h1>
+          <button onClick={handleSaveProfile} className="bg-teal-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm hover:bg-teal-700 transition-colors">Simpan Profil</button>
+        </div>
+        <div className="flex space-x-8 border-b border-slate-200 mb-8">
+          <button onClick={() => setActiveSettingTab('profil')} className={`pb-3 font-bold text-sm border-b-2 transition-colors ${activeSettingTab === 'profil' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Profil Publik</button>
+          <button onClick={() => setActiveSettingTab('rekening')} className={`pb-3 font-bold text-sm border-b-2 transition-colors ${activeSettingTab === 'rekening' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Rekening Payout</button>
+        </div>
+
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          {activeSettingTab === 'profil' && (
+            <>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nama Lengkap & Gelar</label><input type="text" value={tempProfile.name} onChange={e => setTempProfile({...tempProfile, name: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Jabatan / Afiliasi Kampus</label><input type="text" value={tempProfile.title} onChange={e => setTempProfile({...tempProfile, title: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Bio Singkat Pengajar</label><textarea value={tempProfile.bio} onChange={e => setTempProfile({...tempProfile, bio: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold h-28 resize-none"></textarea></div>
+            </>
+          )}
+          {activeSettingTab === 'rekening' && (
+            <>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nama Bank Penerima</label><input type="text" defaultValue="Bank Mandiri" className="w-full p-4 rounded-xl border border-slate-200 outline-none font-semibold" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nomor Rekening</label><input type="text" defaultValue="157-00-0982736-1" className="w-full p-4 rounded-xl border border-slate-200 outline-none font-semibold" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nama Pemilik Rekening</label><input type="text" defaultValue="Rei" className="w-full p-4 rounded-xl border border-slate-200 outline-none font-semibold" /></div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-[#FAFAFF] font-sans">
       <aside className="w-64 bg-[#0B1B1A] text-slate-300 flex flex-col shrink-0 shadow-xl z-20">
@@ -2150,7 +2204,7 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
 
       <div className="flex-1 p-10 overflow-y-auto relative">
         {isBuildingCourse ? (
-          <CourseBuilderWizard onGoBack={() => setIsBuildingCourse(false)} onAddCourse={handleAddCourse} />
+          <CourseBuilderWizard onGoBack={() => setIsBuildingCourse(false)} onAddCourse={onAddCourse} />
         ) : (
           <>
             {isActive('dasbor') && renderDashboard()}
@@ -2168,7 +2222,6 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
         )}
       </div>
 
-      {/* Modal Tambah Berkas Materi */}
       {isMaterialModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-6">
@@ -2193,13 +2246,12 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
   );
 };
 
-// --- ROUTER UTAMA DENGAN GLOBAL SETTINGS STATE ---
+// --- ROUTER UTAMA DENGAN GLOBAL STATE ---
 const App = () => {
   const [courses, setCourses] = useState(initialCourses);
   const [globalSettings, setGlobalSettings] = useState(initialSettings);
   const [instructorProfile, setInstructorProfile] = useState(initialInstructorProfile);
 
-  // Ambil data terbaru langsung dari Neon Database API
   useEffect(() => {
     fetch('/api/courses')
       .then(res => res.json())
@@ -2211,7 +2263,6 @@ const App = () => {
       .catch(err => console.log('Menggunakan data lokal:', err));
   }, []);
 
-  // Handler tambah modul baru (tersinkron ke Instruktur dan Admin)
   const handleAddCourse = async (newCourseData) => {
     try {
       const res = await fetch('/api/courses', {
@@ -2227,11 +2278,21 @@ const App = () => {
     } catch (e) {
       console.error(e);
     }
-    // Fallback jika offline/local
-    setCourses(prev => [newCourseData, ...prev]);
+    const fallbackObj = {
+      id: Date.now(),
+      ...newCourseData,
+      rating: '5.0',
+      reviews: 0,
+      lessons: 1,
+      new_price: newCourseData.price_value > 0 ? `Rp${newCourseData.price_value.toLocaleString('id-ID')}` : 'Gratis',
+      old_price: 'Rp100.000',
+      color: 'from-teal-500 to-emerald-600',
+      icon: '📚',
+      students: 0
+    };
+    setCourses(prev => [fallbackObj, ...prev]);
   };
 
-  // Handler persetujuan (Approve) modul oleh Admin
   const handleApproveCourse = async (courseId) => {
     try {
       await fetch('/api/courses', {
@@ -2243,6 +2304,7 @@ const App = () => {
       console.error(e);
     }
     setCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'Published' } : c));
+    alert("Modul berhasil disetujui (Approved) dan langsung dipublikasikan ke Katalog Mahasiswa!");
   };
 
   return (
