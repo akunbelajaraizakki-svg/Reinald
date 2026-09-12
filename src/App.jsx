@@ -1702,234 +1702,319 @@ const CourseBuilderWizard = ({ onGoBack }) => {
   );
 };
 
-// --- PORTAL INSTRUKTUR COMPREHENSIVE ---
+// --- PORTAL INSTRUKTUR LENGKAP DENGAN FITUR FUNGSIONAL ---
 const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isActive = (path) => location.pathname.includes(path);
-  
+
   const [instructorCourses] = useState(initialCourses);
   const [blogs, setBlogs] = useState(initialBlogs);
   const [activeTab, setActiveTab] = useState('courses');
   const [isBuildingCourse, setIsBuildingCourse] = useState(false);
   const [activeSettingTab, setActiveSettingTab] = useState('profil');
-
   const [tempProfile, setTempProfile] = useState(instructorProfile);
-  const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
-  const [editBlogId, setEditBlogId] = useState(null);
-  const [blogForm, setBlogForm] = useState({ title: '', category: 'Edukasi', customCategory: '', excerpt: '', author: instructorProfile.name });
 
-  const actionAlert = (action, item) => alert(`Fungsi ${action} untuk ${item} berhasil dipanggil!`);
+  // State Fitur-Fitur Instruktur
+  const [materials, setMaterials] = useState([
+    { id: 1, title: 'Modul Teori Siklus Akuntansi.pdf', type: 'PDF', size: '2.4 MB', course: 'Akuntansi Perusahaan Dagang', date: '01 Sep 2026' },
+    { id: 2, title: 'Slide Presentasi Jurnal Khusus.pptx', type: 'PPT', size: '8.1 MB', course: 'Akuntansi Perusahaan Dagang', date: '03 Sep 2026' },
+    { id: 3, title: 'Template Kertas Kerja Neraca Lajur.xlsx', type: 'Excel', size: '1.2 MB', course: 'Akuntansi Perusahaan Dagang', date: '05 Sep 2026' }
+  ]);
+  const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
+  const [materialForm, setMaterialForm] = useState({ title: '', type: 'PDF', course: 'Akuntansi Perusahaan Dagang' });
 
+  const [assessments, setAssessments] = useState([
+    { id: 1, title: 'Kuis Evaluasi Modul 1: Jurnal Khusus', type: 'Pilihan Ganda', questionsCount: 15, duration: '30 Menit', passingGrade: 75 },
+    { id: 2, title: 'Tugas Kasus: Penyusunan Neraca Lajur PT Mandiri', type: 'Upload Berkas', questionsCount: 1, duration: '7 Hari', passingGrade: 80 }
+  ]);
+
+  const [studentsList, setStudentsList] = useState([
+    { id: 101, name: 'Ahmad Budi', email: 'ahmad@kampus.ac.id', course: 'Akuntansi Perusahaan Dagang', progress: 100, score: 92, status: 'Lulus' },
+    { id: 102, name: 'Siti Nurhaliza', email: 'siti@kampus.ac.id', course: 'Akuntansi Perusahaan Dagang', progress: 65, score: 78, status: 'Belajar' },
+    { id: 103, name: 'Budi Santoso', email: 'budi.s@kampus.ac.id', course: 'Akuntansi Perusahaan Dagang', progress: 30, score: 0, status: 'Belajar' }
+  ]);
+
+  const [liveSessions, setLiveSessions] = useState([
+    { id: 1, topic: 'Bedah Kasus Laporan Keuangan Akhir Periode', date: '18 Sep 2026', time: '19:30 WIB', platform: 'Zoom Meeting', link: 'https://zoom.us/j/998822' }
+  ]);
+
+  // Handler Umum
   const handleDeleteItem = (setState, stateArray, id) => {
-    if(window.confirm("Yakin ingin menghapus data ini?")) {
+    if (window.confirm("Yakin ingin menghapus data ini?")) {
       setState(stateArray.filter(item => item.id !== id));
     }
   };
 
+  const handleSaveMaterial = () => {
+    if (!materialForm.title.trim()) return alert("Nama materi wajib diisi!");
+    const newEntry = {
+      id: Date.now(),
+      title: materialForm.title,
+      type: materialForm.type,
+      size: '3.5 MB',
+      course: materialForm.course,
+      date: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    };
+    setMaterials([newEntry, ...materials]);
+    setIsMaterialModalOpen(false);
+    setMaterialForm({ title: '', type: 'PDF', course: 'Akuntansi Perusahaan Dagang' });
+    alert("Berkas materi berhasil ditambahkan ke pustaka!");
+  };
+
   const handleSaveProfile = () => {
     setInstructorProfile(tempProfile);
-    alert("Profil publik instruktur berhasil diperbarui dan disinkronkan secara real-time!");
+    alert("Profil publik instruktur berhasil diperbarui!");
   };
 
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const avatarUrl = URL.createObjectURL(file);
-      setTempProfile({ ...tempProfile, avatar: avatarUrl });
-    }
-  };
-
-  const handleOpenBlogModal = (blog = null) => {
-    if (blog) {
-      setEditBlogId(blog.id);
-      const isStandard = ["Edukasi", "Logistik", "Manajemen", "Akuntansi", "Umum"].includes(blog.category);
-      setBlogForm({ title: blog.title, category: isStandard ? blog.category : 'Lainnya', customCategory: isStandard ? '' : blog.category, excerpt: blog.excerpt, author: blog.author });
-    } else {
-      setEditBlogId(null);
-      setBlogForm({ title: '', category: 'Edukasi', customCategory: '', excerpt: '', author: instructorProfile.name });
-    }
-    setIsBlogModalOpen(true);
-  };
-
-  const handleSaveBlog = () => {
-    if (!blogForm.title.trim() || !blogForm.excerpt.trim()) return alert("Judul dan ringkasan artikel wajib diisi!");
-    const finalCategory = blogForm.category === 'Lainnya' ? (blogForm.customCategory || 'Umum') : blogForm.category;
-
-    if (editBlogId) {
-      setBlogs(blogs.map(b => b.id === editBlogId ? { ...b, ...blogForm, category: finalCategory } : b));
-    } else {
-      const newBlog = { id: Date.now(), ...blogForm, category: finalCategory, date: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }), status: 'Published' };
-      setBlogs([newBlog, ...blogs]);
-    }
-    setIsBlogModalOpen(false);
-  };
-
+  // --- SUB-HALAMAN FUNGSIONAL ---
   const renderDashboard = () => (
     <>
-      <h1 className="text-3xl font-extrabold text-slate-900 mb-8">Overview Kinerja</h1>
+      <h1 className="text-3xl font-extrabold text-slate-900 mb-8">Overview Kinerja Instruktur</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6">Tren Pendaftaran Siswa Saya (6 Bulan)</h3>
+          <h3 className="font-bold text-slate-800 mb-6">Tren Pendaftaran Siswa Saya (6 Bulan Terakhir)</h3>
           <div className="flex items-end gap-3 h-48">
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[30%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Mar</span></div>
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[40%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Apr</span></div>
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[50%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Mei</span></div>
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[70%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Jun</span></div>
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[60%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Jul</span></div>
-            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[100%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full group-hover:bg-teal-600 transition-colors"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Agu</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[30%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Apr</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[45%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Mei</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[60%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Jun</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[55%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Jul</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[80%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Agu</span></div>
+            <div className="flex-1 bg-teal-50 rounded-t-lg relative group h-[100%]"><div className="absolute bottom-0 w-full bg-teal-500 rounded-t-lg h-full"></div><span className="absolute -bottom-6 w-full text-center text-xs font-bold text-slate-400">Sep</span></div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">TOTAL SISWA</p><p className="text-4xl font-extrabold text-slate-900">432</p></div>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">TOTAL SISWA</p><p className="text-4xl font-extrabold text-slate-900">{studentsList.length * 42}</p></div>
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">COURSE AKTIF</p><p className="text-4xl font-extrabold text-slate-900">{instructorCourses.length}</p></div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">RATA-RATA RATING</p><p className="text-3xl font-extrabold text-slate-900">4.8 <span className="text-sm text-yellow-500">★</span></p></div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">PENDAPATAN</p><p className="text-2xl font-extrabold text-teal-600">Rp 3.9M</p></div>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">RATA-RATA RATING</p><p className="text-3xl font-extrabold text-slate-900">4.9 <span className="text-amber-500">★</span></p></div>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center"><p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">ESTIMASI BAGI HASIL</p><p className="text-2xl font-extrabold text-teal-600">Rp 5.120.000</p></div>
         </div>
       </div>
     </>
   );
 
-  const renderCourseSaya = () => (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black text-slate-900">Course Saya</h1>
-        <button onClick={() => setIsBuildingCourse(true)} className="bg-teal-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm hover:bg-teal-700 transition-colors">+ Buat Modul</button>
-      </div>
-      
-      <div className="flex space-x-8 border-b border-slate-200 mb-8">
-        <button onClick={() => setActiveTab('courses')} className={`pb-3 font-bold text-sm border-b-2 transition-colors ${activeTab === 'courses' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Semua Course</button>
-        <button onClick={() => setActiveTab('draft')} className={`pb-3 font-bold text-sm border-b-2 transition-colors ${activeTab === 'draft' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Draft</button>
-        <button onClick={() => setActiveTab('published')} className={`pb-3 font-bold text-sm border-b-2 transition-colors ${activeTab === 'published' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Published</button>
-      </div>
-      
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full min-w-[900px] text-left text-sm text-slate-600">
-            <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
-              <tr><th className="px-6 py-4 font-bold">JUDUL MODUL</th><th className="px-6 py-4 font-bold">KATEGORI</th><th className="px-6 py-4 font-bold">STATUS</th><th className="px-6 py-4 font-bold">HARGA</th><th className="px-6 py-4 font-bold text-center">PESERTA</th><th className="px-6 py-4 font-bold text-center">AKSI</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {instructorCourses.map((course) => (
-                <tr key={course.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-5 font-bold text-slate-900 max-w-xs truncate" title={course.title}>{course.title}</td>
-                  <td className="px-6 py-5"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold">{course.category}</span></td>
-                  <td className="px-6 py-5">
-                    <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${course.status === 'Published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{course.status}</span>
-                  </td>
-                  <td className="px-6 py-5 font-bold text-slate-700">{course.newPrice}</td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-700">{course.students}</td>
-                  <td className="px-6 py-5 text-center"><button onClick={() => setIsBuildingCourse(true)} className="text-teal-600 font-bold hover:bg-teal-50 px-4 py-2 rounded-lg transition-colors border border-teal-100 whitespace-nowrap">Kelola Course</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderBlog = () => (
+  const renderMaterials = () => (
     <>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-extrabold text-slate-900">Artikel & Blog</h1>
-        <button onClick={() => handleOpenBlogModal()} className="bg-teal-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-teal-700">+ Tulis Artikel</button>
-      </div>
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
-              <tr><th className="px-6 py-4 font-bold">JUDUL ARTIKEL</th><th className="px-6 py-4 font-bold">PENULIS</th><th className="px-6 py-4 font-bold">TGL PUBLIKASI</th><th className="px-6 py-4 font-bold">STATUS</th><th className="px-6 py-4 font-bold text-center">AKSI</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {blogs.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-5 font-bold text-slate-800 max-w-xs truncate" title={b.title}>{b.title}</td>
-                  <td className="px-6 py-5">{b.author}</td>
-                  <td className="px-6 py-5">{b.date}</td>
-                  <td className="px-6 py-5"><span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${b.status === 'Published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{b.status}</span></td>
-                  <td className="px-6 py-5 text-center space-x-3">
-                    <button onClick={() => handleOpenBlogModal(b)} className="text-teal-600 font-bold hover:underline">Edit</button>
-                    <button onClick={() => handleDeleteItem(setBlogs, blogs, b.id)} className="text-red-500 font-bold hover:underline">Hapus</button>
-                  </td>
-                </tr>
-              ))}
-              {blogs.length === 0 && <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 font-medium">Belum ada artikel yang dipublikasikan.</td></tr>}
-            </tbody>
-          </table>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Library Materi & E-Book</h1>
+          <p className="text-sm text-slate-500 mt-1">Kelola dokumen pedoman, slide, dan lembar kerja yang disematkan ke modul pembelajaran.</p>
         </div>
+        <button onClick={() => setIsMaterialModalOpen(true)} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">+ Unggah Dokumen</button>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
+            <tr>
+              <th className="px-6 py-4 font-bold">NAMA FILE</th>
+              <th className="px-6 py-4 font-bold">FORMAT</th>
+              <th className="px-6 py-4 font-bold">KURSUS TERKAIT</th>
+              <th className="px-6 py-4 font-bold">UKURAN</th>
+              <th className="px-6 py-4 font-bold text-center">AKSI</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {materials.map((m) => (
+              <tr key={m.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 font-bold text-slate-800">📄 {m.title}</td>
+                <td className="px-6 py-4"><span className="bg-teal-50 text-teal-700 px-2.5 py-1 rounded text-xs font-bold">{m.type}</span></td>
+                <td className="px-6 py-4 text-xs text-slate-500">{m.course}</td>
+                <td className="px-6 py-4 text-xs">{m.size}</td>
+                <td className="px-6 py-4 text-center space-x-3">
+                  <button onClick={() => alert(`Mengunduh berkas: ${m.title}`)} className="text-teal-600 font-bold hover:underline">Unduh</button>
+                  <button onClick={() => handleDeleteItem(setMaterials, materials, m.id)} className="text-red-500 font-bold hover:underline">Hapus</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
 
-  const renderPengaturan = () => {
-    return (
-      <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-black text-slate-900">Pengaturan Akun Instruktur</h1>
-          <button onClick={handleSaveProfile} className="bg-teal-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm hover:bg-teal-700 transition-colors">Simpan Perubahan</button>
+  const renderVideos = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Video Pembelajaran Terintegrasi</h1>
+          <p className="text-sm text-slate-500 mt-1">Daftar rekaman video perkuliahan dan link streaming.</p>
         </div>
-        <div className="flex space-x-8 border-b border-slate-200 mb-8 overflow-x-auto">
-          <button onClick={() => setActiveSettingTab('profil')} className={`pb-3 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${activeSettingTab === 'profil' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Profil Publik</button>
-          <button onClick={() => setActiveSettingTab('pembayaran')} className={`pb-3 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${activeSettingTab === 'pembayaran' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Rekening Payout</button>
-          <button onClick={() => setActiveSettingTab('notifikasi')} className={`pb-3 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${activeSettingTab === 'notifikasi' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Notifikasi & Keamanan</button>
-        </div>
+        <button onClick={() => alert("Membuka dialog tambah URL YouTube / Vimeo...")} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">+ Sambungkan Video</button>
+      </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8">
-          {activeSettingTab === 'profil' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-slate-200 rounded-full overflow-hidden border-2 border-slate-100">
-                  {tempProfile.avatar ? (
-                    <img src={tempProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">👨‍🏫</div>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Upload Foto Profil Baru</label>
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 outline-none cursor-pointer" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nama Lengkap & Gelar</label><input type="text" value={tempProfile.name} onChange={e => setTempProfile({...tempProfile, name: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
-                <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Afiliasi/Jabatan</label><input type="text" value={tempProfile.title} onChange={e => setTempProfile({...tempProfile, title: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
-              </div>
-              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Biografi Instruktur</label><textarea value={tempProfile.bio} onChange={e => setTempProfile({...tempProfile, bio: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold h-24 resize-none"></textarea></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { title: "Pengantar Dokumen Sumber Transaksi Dagang", duration: "08:15", status: "Terhubung (YouTube)", views: 240 },
+          { title: "Posting Buku Besar Pembantu Piutang", duration: "12:40", status: "Terhubung (YouTube)", views: 185 },
+          { title: "Penyusunan Laporan Laba Rugi Komprehensif", duration: "15:20", status: "Terhubung (LMS Storage)", views: 160 }
+        ].map((v, idx) => (
+          <div key={idx} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm p-5 space-y-3">
+            <div className="aspect-video bg-slate-900 rounded-xl flex items-center justify-center text-3xl text-white cursor-pointer hover:bg-slate-800 transition">
+              ▶️
             </div>
-          )}
-          {activeSettingTab === 'pembayaran' && (
-            <div className="space-y-6">
-               <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Bank Tujuan Payout</label><select className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold bg-slate-50"><option>Bank Mandiri</option><option>BCA</option><option>BNI</option><option>BRI</option></select></div>
-               <div className="grid grid-cols-2 gap-6">
-                <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nomor Rekening</label><input type="number" placeholder="1234567890" className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
-                <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Nama Pemilik Rekening</label><input type="text" placeholder="Sesuai KTP..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" /></div>
-              </div>
+            <h4 className="font-bold text-slate-800 text-sm leading-snug">{v.title}</h4>
+            <div className="flex justify-between items-center text-xs text-slate-500 pt-2 border-t border-slate-100">
+              <span>⏱️ {v.duration}</span>
+              <span>👁️ {v.views} tayangan</span>
             </div>
-          )}
-          {activeSettingTab === 'notifikasi' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div><h3 className="font-bold text-slate-800">Pemberitahuan Pendaftaran</h3><p className="text-sm text-slate-500">Kirim email setiap kali ada siswa baru yang mendaftar ke kelas Anda.</p></div>
-                <input type="checkbox" defaultChecked className="w-6 h-6 text-teal-600 accent-teal-600" />
-              </div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div><h3 className="font-bold text-slate-800">Notifikasi Diskusi</h3><p className="text-sm text-slate-500">Beritahu via email jika ada pertanyaan baru di forum diskusi.</p></div>
-                <input type="checkbox" defaultChecked className="w-6 h-6 text-teal-600 accent-teal-600" />
-              </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderAssessments = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Assessment & Bank Soal</h1>
+          <p className="text-sm text-slate-500 mt-1">Evaluasi pemahaman mahasiswa melalui kuis mandiri dan penugasan esai terstruktur.</p>
+        </div>
+        <button onClick={() => alert("Membuka modul pembuat butir kuis...")} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">+ Buat Asesmen Baru</button>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
+            <tr>
+              <th className="px-6 py-4 font-bold">JUDUL ASESMEN</th>
+              <th className="px-6 py-4 font-bold">TIPE</th>
+              <th className="px-6 py-4 font-bold">JUMLAH BUTIR</th>
+              <th className="px-6 py-4 font-bold">DURASI / BATAS</th>
+              <th className="px-6 py-4 font-bold">PASSING GRADE</th>
+              <th className="px-6 py-4 font-bold text-center">AKSI</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {assessments.map((a) => (
+              <tr key={a.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 font-bold text-slate-800">{a.title}</td>
+                <td className="px-6 py-4"><span className="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded text-xs font-bold">{a.type}</span></td>
+                <td className="px-6 py-4 text-xs">{a.questionsCount} Butir</td>
+                <td className="px-6 py-4 text-xs">{a.duration}</td>
+                <td className="px-6 py-4 font-bold text-emerald-600">{a.passingGrade}%</td>
+                <td className="px-6 py-4 text-center space-x-3">
+                  <button onClick={() => alert("Mengedit butir pertanyaan...")} className="text-teal-600 font-bold hover:underline">Kelola Soal</button>
+                  <button onClick={() => handleDeleteItem(setAssessments, assessments, a.id)} className="text-red-500 font-bold hover:underline">Hapus</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+
+  const renderEngagement = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Engagement & Sesi Live</h1>
+          <p className="text-sm text-slate-500 mt-1">Interaksi langsung melalui jadwal webinar dan ruang asistensi perkuliahan.</p>
+        </div>
+        <button onClick={() => alert("Membuka form penambahan jadwal Live Class...")} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">+ Jadwalkan Sesi</button>
+      </div>
+
+      <div className="space-y-6">
+        {liveSessions.map(s => (
+          <div key={s.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div className="space-y-1">
+              <span className="bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">🔴 Live Class</span>
+              <h3 className="text-xl font-bold text-slate-900 mt-2">{s.topic}</h3>
+              <p className="text-sm text-slate-500">📅 {s.date} • ⏰ {s.time} via {s.platform}</p>
             </div>
-          )}
+            <a href={s.link} target="_blank" rel="noopener noreferrer" className="bg-teal-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow hover:bg-teal-700 transition">
+              Buka Tautan Zoom 🚀
+            </a>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderStudents = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Pemantauan Peserta</h1>
+          <p className="text-sm text-slate-500 mt-1">Daftar mahasiswa terdaftar, progres materi, dan evaluasi capaian belajar.</p>
         </div>
       </div>
-    );
-  };
 
-  const renderPlaceholder = (title, icon, desc) => (
-    <div className="flex flex-col items-center justify-center h-full pt-20">
-      <span className="text-6xl mb-6">{icon}</span>
-      <h1 className="text-3xl font-extrabold text-slate-900 mb-4">{title}</h1>
-      <p className="text-slate-500 text-center max-w-md">{desc}</p>
-    </div>
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider">
+            <tr>
+              <th className="px-6 py-4 font-bold">NAMA MAHASISWA</th>
+              <th className="px-6 py-4 font-bold">MODUL</th>
+              <th className="px-6 py-4 font-bold">PROGRES</th>
+              <th className="px-6 py-4 font-bold">NILAI AKHIR</th>
+              <th className="px-6 py-4 font-bold">STATUS</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {studentsList.map((s) => (
+              <tr key={s.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 font-bold text-slate-800"><p>{s.name}</p><p className="text-xs text-slate-400 font-normal">{s.email}</p></td>
+                <td className="px-6 py-4 text-xs">{s.course}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-teal-500 h-full rounded-full" style={{ width: `${s.progress}%` }}></div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">{s.progress}%</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 font-extrabold text-slate-800">{s.score > 0 ? s.score : '-'}</td>
+                <td className="px-6 py-4"><span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${s.status === 'Lulus' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{s.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+
+  const renderMonetization = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Monetisasi & Riwayat Payout</h1>
+          <p className="text-sm text-slate-500 mt-1">Laporan pendapatan penjualan modul dan pengajuan penarikan dana.</p>
+        </div>
+        <button onClick={() => alert("Pengajuan penarikan dana (Payout) telah dikirim ke bagian Keuangan!")} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">Tarik Saldo (Payout)</button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">TOTAL SALDO TERSEDIA</p><p className="text-3xl font-extrabold text-teal-600">Rp 5.120.000</p></div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">TOTAL DITARIK (LIFETIME)</p><p className="text-3xl font-extrabold text-slate-900">Rp 14.800.000</p></div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">REKENING TERDAFTAR</p><p className="text-base font-extrabold text-slate-800 mt-2">Bank Mandiri •• 9012</p></div>
+      </div>
+    </>
+  );
+
+  const renderCertificateSettings = () => (
+    <>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Manajemen Template Sertifikat</h1>
+          <p className="text-sm text-slate-500 mt-1">Atur kriteria kelulusan dan penomoran otomatis ber-QR code.</p>
+        </div>
+        <button onClick={() => alert("Pengaturan parameter sertifikat disimpan!")} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold shadow hover:bg-teal-700 transition">Simpan Format</button>
+      </div>
+
+      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-2xl space-y-6">
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Format Nomor Sertifikat</label>
+          <input type="text" defaultValue="MONDY-CERT/{YEAR}/{ID}" className="w-full p-4 rounded-xl border border-slate-200 font-semibold" />
+        </div>
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div><h4 className="font-bold text-slate-800">Verifikasi QR Code Publik</h4><p className="text-xs text-slate-500">Tampilkan halaman verifikasi autentisitas saat QR di-scan.</p></div>
+          <input type="checkbox" defaultChecked className="w-5 h-5 accent-teal-600" />
+        </div>
+      </div>
+    </>
   );
 
   return (
@@ -1939,34 +2024,33 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
           <Link to="/" className="text-2xl font-serif font-bold text-white mb-1 block tracking-tight">Mondy<span className="text-teal-400">Instruktur</span></Link>
           <div className="text-[9px] font-bold text-teal-500/70 uppercase tracking-widest mt-1">Instructor Portal</div>
         </div>
-        
+
         <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/dasbor'); }} className={`w-full text-left flex items-center px-6 py-3.5 font-bold text-sm transition-colors ${isActive('dasbor') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📈 Dashboard</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/courses'); setActiveTab('courses'); }} className={`w-full text-left flex items-center px-6 py-3.5 font-bold text-sm transition-colors ${isActive('courses') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📚 Course Saya</button>
           <button onClick={() => setIsBuildingCourse(true)} className={`w-full text-left flex items-center px-6 py-3 font-semibold text-sm transition-colors ${isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-teal-400 hover:bg-white/5 border-l-4 border-transparent'}`}>➕ Buat Modul</button>
-          
+
           <div className="px-6 py-4 mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Library & Materi</div>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/materi'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('materi') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📁 Materi & E-Book</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/video'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('video') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>🎥 Video Pembelajaran</button>
-          
+
           <div className="px-6 py-4 mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interaksi & Evaluasi</div>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/assessment'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('assessment') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📝 Assessment</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/engagement'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('engagement') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>💬 Engagement</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/peserta'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('peserta') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>👥 Peserta</button>
-          
+
           <div className="px-6 py-4 mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kinerja & Sistem</div>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/analytics'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('analytics') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📊 Analytics</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/monetisasi'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('monetisasi') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>💰 Monetisasi</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/sertifikat'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('sertifikat') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>🏆 Sertifikat</button>
-          <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/blog'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('blog') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>📝 Manajemen Blog</button>
           <button onClick={() => { setIsBuildingCourse(false); navigate('/instruktur/pengaturan'); }} className={`w-full text-left flex items-center px-6 py-3 font-medium text-sm transition-colors ${isActive('pengaturan') && !isBuildingCourse ? 'text-teal-400 bg-teal-900/40 border-l-4 border-teal-500' : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'}`}>⚙️ Pengaturan</button>
         </nav>
-        
+
         <div className="p-6 border-t border-white/5">
-           <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-400 hover:text-white transition-colors flex items-center">← Keluar (Log Out)</button>
+          <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-400 hover:text-white transition-colors flex items-center">← Keluar (Log Out)</button>
         </div>
       </aside>
-      
+
       <div className="flex-1 p-10 overflow-y-auto relative">
         {isBuildingCourse ? (
           <CourseBuilderWizard onGoBack={() => setIsBuildingCourse(false)} />
@@ -1974,54 +2058,37 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
           <>
             {isActive('dasbor') && renderDashboard()}
             {isActive('courses') && renderCourseSaya()}
-            {isActive('materi') && renderPlaceholder("Library Materi & E-Book", "📁", "Manajemen file pendukung terpusat untuk PDF, slide presentasi, dan E-Book yang dapat digunakan berulang kali di berbagai course.")}
-            {isActive('video') && renderPlaceholder("Video Pembelajaran", "🎥", "Kelola library video dari YouTube, Vimeo, atau unggahan langsung secara terpusat.")}
-            {isActive('assessment') && renderPlaceholder("Assessment & Bank Soal", "📝", "Buat dan kelola bank soal, kuis, dan tugas evaluasi untuk digunakan di berbagai modul.")}
-            {isActive('engagement') && renderPlaceholder("Engagement & Live Class", "💬", "Moderasi forum diskusi kelas dan kelola jadwal sesi tatap muka (Live Class).")}
-            {isActive('peserta') && renderPlaceholder("Peserta Kelas", "👥", "Pantau daftar siswa, progres pembelajaran individu, riwayat nilai, dan tingkat kelulusan.")}
-            {isActive('analytics') && renderPlaceholder("Course Analytics", "📊", "Dasbor metrik pendaftaran, durasi tontonan video, penyelesaian kuis, dan performa keseluruhan course.")}
-            {isActive('monetisasi') && renderPlaceholder("Monetisasi & Promo", "💰", "Atur skema harga normal, promo diskon berkelanjutan, kupon, dan laporan riwayat penarikan dana (payout).")}
-            {isActive('sertifikat') && renderPlaceholder("Manajemen Sertifikat", "🏆", "Desain template sertifikat kustom dan atur parameter verifikasi kelulusan otomatis.")}
-            {isActive('blog') && renderBlog()}
+            {isActive('materi') && renderMaterials()}
+            {isActive('video') && renderVideos()}
+            {isActive('assessment') && renderAssessments()}
+            {isActive('engagement') && renderEngagement()}
+            {isActive('peserta') && renderStudents()}
+            {isActive('analytics') && renderDashboard()}
+            {isActive('monetisasi') && renderMonetization()}
+            {isActive('sertifikat') && renderCertificateSettings()}
             {isActive('pengaturan') && renderPengaturan()}
           </>
         )}
       </div>
 
-      {/* Modal Form Blog Instruktur */}
-      {isBlogModalOpen && (
+      {/* Modal Tambah Berkas Materi */}
+      {isMaterialModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-black text-slate-900">{editBlogId ? 'Edit Artikel' : 'Tulis Artikel Baru'}</h3>
-              <button onClick={() => setIsBlogModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            </div>
-            
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-6">
+            <div className="flex justify-between items-center"><h3 className="text-2xl font-black text-slate-900">Unggah Materi Baru</h3><button onClick={() => setIsMaterialModalOpen(false)} className="text-slate-400 font-bold">✕</button></div>
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Judul Artikel</label>
-                <input type="text" value={blogForm.title} onChange={(e) => setBlogForm({...blogForm, title: e.target.value})} placeholder="Masukkan judul..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Kategori Topik</label>
-                <select value={blogForm.category} onChange={(e) => setBlogForm({...blogForm, category: e.target.value})} className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 bg-slate-50 font-semibold text-slate-700 mb-3">
-                  <option value="Edukasi">Edukasi</option><option value="Logistik">Logistik</option><option value="Manajemen">Manajemen</option><option value="Akuntansi">Akuntansi</option><option value="Umum">Umum</option>
-                  <option value="Lainnya">Lainnya (Ketik Sendiri)</option>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Judul Dokumen</label><input type="text" value={materialForm.title} onChange={e => setMaterialForm({...materialForm, title: e.target.value})} placeholder="Contoh: Modul Siklus Akuntansi.pdf" className="w-full p-4 rounded-xl border font-semibold" /></div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Format Berkas</label>
+                <select value={materialForm.type} onChange={e => setMaterialForm({...materialForm, type: e.target.value})} className="w-full p-4 rounded-xl border bg-slate-50 font-semibold">
+                  <option value="PDF">PDF Document</option>
+                  <option value="PPT">PowerPoint Presentation</option>
+                  <option value="Excel">Spreadsheet (XLSX)</option>
+                  <option value="Word">DOCX Document</option>
                 </select>
-                {blogForm.category === 'Lainnya' && (
-                  <input type="text" value={blogForm.customCategory} onChange={(e) => setBlogForm({...blogForm, customCategory: e.target.value})} placeholder="Contoh: Pariwisata, Sistem Informasi..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 font-semibold" />
-                )}
               </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Isi Artikel / Ringkasan</label>
-                <textarea value={blogForm.excerpt} onChange={(e) => setBlogForm({...blogForm, excerpt: e.target.value})} placeholder="Tuliskan isi artikel Anda di sini..." className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-teal-500 min-h-[150px] resize-y"></textarea>
-              </div>
+              <div><label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Pilih File dari Komputer</label><input type="file" className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-teal-50 file:text-teal-700 font-bold border rounded-xl p-2" /></div>
             </div>
-
-            <div className="flex space-x-3 pt-4 border-t border-slate-100">
-              <button onClick={() => setIsBlogModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Batal</button>
-              <button onClick={handleSaveBlog} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-md transition-colors">Publikasikan Artikel</button>
-            </div>
+            <div className="flex space-x-3 pt-4 border-t"><button onClick={() => setIsMaterialModalOpen(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-bold">Batal</button><button onClick={handleSaveMaterial} className="flex-1 py-4 bg-teal-600 text-white rounded-xl font-bold">Simpan Berkas</button></div>
           </div>
         </div>
       )}
