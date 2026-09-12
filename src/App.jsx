@@ -2195,40 +2195,71 @@ const InstructorLayout = ({ instructorProfile, setInstructorProfile }) => {
 
 // --- ROUTER UTAMA DENGAN GLOBAL SETTINGS STATE ---
 const App = () => {
-  const [globalSettings, setGlobalSettings] = useState({
-    platformName: "Mondy",
-    primaryColor: "#9333EA",
-    fontSize: "16px",
-    heroTitle: "Aplikasi Belajar Kuliah No 1 di Indonesia",
-    seoDesc: "Akses video dari dosen universitas top, sambil melihat pembahasan dan rangkuman soal, disertai AI untuk membantumu meraih IPK idaman.",
-    logoUrl: "",
-    heroBanner: "",
-    adBannerUrl: "",
-    adLink: ""
-  });
+  const [courses, setCourses] = useState(initialCourses);
+  const [globalSettings, setGlobalSettings] = useState(initialSettings);
+  const [instructorProfile, setInstructorProfile] = useState(initialInstructorProfile);
 
-  const [instructorProfile, setInstructorProfile] = useState({
-    name: "Laurensius Reinald Diansilves Due, S.Pd., M.Pd.",
-    title: "Dosen Pengantar Akuntansi I",
-    bio: "Berpengalaman dalam pengembangan sistem informasi akuntansi dan E-Learning Management System (LMS).",
-    avatar: ""
-  });
+  // Ambil data terbaru langsung dari Neon Database API
+  useEffect(() => {
+    fetch('/api/courses')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCourses(data);
+        }
+      })
+      .catch(err => console.log('Menggunakan data lokal:', err));
+  }, []);
+
+  // Handler tambah modul baru (tersinkron ke Instruktur dan Admin)
+  const handleAddCourse = async (newCourseData) => {
+    try {
+      const res = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCourseData)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setCourses(prev => [saved, ...prev]);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback jika offline/local
+    setCourses(prev => [newCourseData, ...prev]);
+  };
+
+  // Handler persetujuan (Approve) modul oleh Admin
+  const handleApproveCourse = async (courseId) => {
+    try {
+      await fetch('/api/courses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: courseId, status: 'Published' })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'Published' } : c));
+  };
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home settings={globalSettings} />} />
-        <Route path="/katalog" element={<Catalog settings={globalSettings} />} />
+        <Route path="/" element={<Home settings={globalSettings} courses={courses} />} />
+        <Route path="/katalog" element={<Catalog settings={globalSettings} courses={courses} />} />
         <Route path="/artikel" element={<PublicArticleList settings={globalSettings} />} />
-        <Route path="/detail/:id" element={<CourseDetail settings={globalSettings} instructorProfile={instructorProfile} />} />
+        <Route path="/detail/:id" element={<CourseDetail settings={globalSettings} instructorProfile={instructorProfile} courses={courses} />} />
         <Route path="/login" element={<Login settings={globalSettings} />} />
-        <Route path="/dasbor" element={<Dashboard settings={globalSettings} />} />
+        <Route path="/dasbor" element={<Dashboard settings={globalSettings} courses={courses} />} />
         <Route path="/belajar" element={<LearningRoom />} />
         <Route path="/asesmen" element={<Assessment />} />
         <Route path="/sertifikat" element={<Certificate />} />
-        <Route path="/admin/*" element={<AdminLayout settings={globalSettings} setSettings={setGlobalSettings} />} />
-        <Route path="/instruktur/*" element={<InstructorLayout instructorProfile={instructorProfile} setInstructorProfile={setInstructorProfile} />} />
-        
+        <Route path="/admin/*" element={<AdminLayout settings={globalSettings} setSettings={setGlobalSettings} courses={courses} onApproveCourse={handleApproveCourse} />} />
+        <Route path="/instruktur/*" element={<InstructorLayout instructorProfile={instructorProfile} setInstructorProfile={setInstructorProfile} courses={courses} onAddCourse={handleAddCourse} />} />
+
         {/* Rute Halaman Dukungan Footer */}
         <Route path="/bantuan" element={<SupportPage settings={globalSettings} type="faq" />} />
         <Route path="/syarat" element={<SupportPage settings={globalSettings} type="terms" />} />
